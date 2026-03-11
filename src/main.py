@@ -1,7 +1,7 @@
 from PIL import Image
 import numpy as np
 
-img = Image.open("./image.jpg").convert("RGB")
+img = Image.open("./breaking_bad.jpg").convert("RGB")
 
 
 def to_grayscale_avr_mth(img: Image) -> Image:
@@ -64,10 +64,11 @@ def conv(
             )
         )
 
-    for i in range(result.shape[0]):
-        for j in range(result.shape[1]):
-            window = padded_img[i : i + kernel.shape[0], j : j + kernel.shape[0]]
-            result[i][j] = np.sum(window * kernel)
+    for i in range(kernel.shape[0]):
+        for j in range(kernel.shape[1]):
+            slice = padded_img[i : i + result.shape[0], j : j + result.shape[1]]
+
+            result += slice * kernel[i, j]
 
     result = np.clip(result, 0, 255).astype(np.uint8)
     result = Image.fromarray(result)
