@@ -33,20 +33,39 @@ def to_grayscale(img: Image, type: str = "lum") -> Image:
         return to_grayscale_avr_mth(img)
 
 
-def conv(img: Image) -> Image:
+def conv(
+    img: Image,
+    kernel: np.ndarray = np.array([[0, 0, 0], [0, 1, 0], [0, 0, 0]]),
+    padding: bool = True,
+) -> Image:
+    if kernel.shape[0] != kernel.shape[1]:
+        raise ValueError("Kernel shape must be a square.")
+    if kernel.shape[0] % 2 == 0:
+        raise ValueError("Kernel shape must be odd.")
+
     img = to_grayscale(img)
     img_arr = np.array(img)
-    kernel = np.array([[0, -1, 0], [-1, 5, -1], [0, -1, 0]])
-    padding = (kernel.shape[0] - 1) // 2
 
-    zero_h = np.zeros((img_arr.shape[0], padding))
-    zero_w = np.zeros((padding, img_arr.shape[1] + 2 * padding))
-    padded_img = np.hstack((zero_h, img_arr, zero_h))
-    padded_img = np.vstack((zero_w, padded_img, zero_w))
+    if padding:
+        padding = (kernel.shape[0] - 1) // 2
 
-    result = np.zeros((img_arr.shape[0], img_arr.shape[1]))
-    for i in range(img_arr.shape[0]):
-        for j in range(img_arr.shape[1]):
+        zero_h = np.zeros((img_arr.shape[0], padding))
+        zero_w = np.zeros((padding, img_arr.shape[1] + 2 * padding))
+        padded_img = np.hstack((zero_h, img_arr, zero_h))
+        padded_img = np.vstack((zero_w, padded_img, zero_w))
+        result = np.zeros((img_arr.shape[0], img_arr.shape[1]))
+
+    else:
+        padded_img = img_arr
+        result = np.zeros(
+            (
+                img_arr.shape[0] - (kernel.shape[0] - 1),
+                img_arr.shape[1] - (kernel.shape[1] - 1),
+            )
+        )
+
+    for i in range(result.shape[0]):
+        for j in range(result.shape[1]):
             window = padded_img[i : i + kernel.shape[0], j : j + kernel.shape[0]]
             result[i][j] = np.sum(window * kernel)
 
@@ -55,5 +74,5 @@ def conv(img: Image) -> Image:
     return result
 
 
-result = conv(img)
+result = conv(img, padding=False)
 result.save("output.jpg")
