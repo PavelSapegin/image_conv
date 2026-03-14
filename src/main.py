@@ -38,6 +38,7 @@ def conv(
     img: Image,
     kernel: np.ndarray = np.array([[0, 0, 0], [0, 1, 0], [0, 0, 0]]),
     padding: bool = True,
+    optimize: bool = True
 ) -> Image:
     if kernel.shape[0] != kernel.shape[1]:
         raise ValueError("Kernel shape must be a square.")
@@ -65,11 +66,17 @@ def conv(
             )
         )
 
+    if optimize:
         for i in range(kernel.shape[0]):
             for j in range(kernel.shape[1]):
                 slice = padded_img[i : i + result.shape[0], j : j + result.shape[1]]
 
                 result += slice * kernel[i, j]
+    else:       
+        for i in range(result.shape[0]):
+            for j in range(result.shape[1]):
+                window = padded_img[i: i + kernel.shape[0], j : j + kernel.shape[0]]
+                result[i][j] = np.sum(window*kernel)
 
     result = np.clip(result, 0, 255).astype(np.uint8)
     result = Image.fromarray(result)
