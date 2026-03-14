@@ -1,36 +1,37 @@
 from PIL import Image
 import numpy as np
 
-img = Image.open("./breaking_bad.jpg").convert("RGB")
+"""
+TASKS:
+1. to_grayscale объединить в одну функцию, 
+    сделать вычисления методов по флагу  DONE
+2. Сделать докстринги для функций
+3. Может быть сделать обёртку-класс для работы (мб наследовать от Image, но не точно,
+    мб только какие-то методы, не знаю)
+4. Подумать про ещё оптимизации (это тоже ещё посмотрим какой будет прирост от них,
+если маленький, то ещё подумаю - Im2Col) - под огромнейшим сомнением, нецелесообразно
+5. Можно заменить padding на numpy, np.pad. Всё реализовано, скучно.
+"""
 
 
-def to_grayscale_avr_mth(img: Image) -> Image:
-    img_arr = np.array(img)
-
-    result = np.mean(img_arr, axis=2).astype(np.uint8)
-
-    result = Image.fromarray(result)
-    return result
-
-
-def to_grayscale_lum_mth(img: Image) -> Image:
-    img_arr = np.array(img)
-
-    result = (
-        0.299 * img_arr[::, ::, 0]
-        + 0.587 * img_arr[::, ::, 1]
-        + 0.114 * img_arr[::, ::, 2]
-    )
-    result = result.astype(np.uint8)
-    result = Image.fromarray(result)
-    return result
+img = Image.open("./images/image.jpg").convert("RGB")
 
 
 def to_grayscale(img: Image, type: str = "lum") -> Image:
-    if type == "lum":
-        return to_grayscale_lum_mth(img)
-    else:
-        return to_grayscale_avr_mth(img)
+    img_arr = np.array(img)
+
+    if type == "lum": # Lum method
+        result = (
+            0.299 * img_arr[::, ::, 0]
+            + 0.587 * img_arr[::, ::, 1]
+            + 0.114 * img_arr[::, ::, 2]
+        )
+    else: # Average method
+        result = np.mean(img_arr, axis=2)
+        
+    result = result.astype(np.uint8)
+    result = Image.fromarray(result)
+    return result
 
 
 def conv(
@@ -64,16 +65,16 @@ def conv(
             )
         )
 
-    for i in range(kernel.shape[0]):
-        for j in range(kernel.shape[1]):
-            slice = padded_img[i : i + result.shape[0], j : j + result.shape[1]]
+        for i in range(kernel.shape[0]):
+            for j in range(kernel.shape[1]):
+                slice = padded_img[i : i + result.shape[0], j : j + result.shape[1]]
 
-            result += slice * kernel[i, j]
+                result += slice * kernel[i, j]
 
     result = np.clip(result, 0, 255).astype(np.uint8)
     result = Image.fromarray(result)
     return result
 
-
-result = conv(img, padding=False)
-result.save("output.jpg")
+if __name__ == "__main__":
+    result = conv(img, padding=False)
+    result.save("output.jpg")
