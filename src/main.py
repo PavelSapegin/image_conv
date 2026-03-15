@@ -1,20 +1,10 @@
 from PIL import Image
 import numpy as np
 
-"""
-TASKS:
-1. to_grayscale объединить в одну функцию, 
-    сделать вычисления методов по флагу  DONE
-2. Сделать докстринги для функций
-3. Может быть сделать обёртку-класс для работы (мб наследовать от Image, но не точно,
-    мб только какие-то методы, не знаю)
-4. Подумать про ещё оптимизации (это тоже ещё посмотрим какой будет прирост от них,
-если маленький, то ещё подумаю - Im2Col) - под огромнейшим сомнением, нецелесообразно
-5. Можно заменить padding на numpy, np.pad. Всё реализовано, скучно.
-"""
 
 
-img = Image.open("./images/image.jpg").convert("RGB")
+
+img = Image.open("./images/breaking_bad.jpg").convert("RGB")
 
 
 def to_grayscale(img: Image, type: str = "lum") -> Image:
@@ -45,17 +35,21 @@ def conv(
     if kernel.shape[0] % 2 == 0:
         raise ValueError("Kernel shape must be odd.")
 
-    img = to_grayscale(img)
-    img_arr = np.array(img)
+    #img = to_grayscale(img)
+    img_arr = np.array(img,dtype=np.float32)
+    kernel = kernel.astype(np.float32)
 
     if padding:
         padding = (kernel.shape[0] - 1) // 2
 
-        zero_h = np.zeros((img_arr.shape[0], padding))
-        zero_w = np.zeros((padding, img_arr.shape[1] + 2 * padding))
-        padded_img = np.hstack((zero_h, img_arr, zero_h))
-        padded_img = np.vstack((zero_w, padded_img, zero_w))
-        result = np.zeros((img_arr.shape[0], img_arr.shape[1]))
+        zero_h = np.zeros((img_arr.shape[0], padding,3))
+        zero_w = np.zeros((padding, img_arr.shape[1] + 2 * padding,3))
+        padded_img = np.hstack((zero_h, img_arr, zero_h),dtype=np.float32)
+        padded_img = np.vstack((zero_w, padded_img, zero_w),dtype=np.float32)
+        
+        result = np.zeros((img_arr.shape[0], img_arr.shape[1],3),dtype=np.float32)
+        
+        
 
     else:
         padded_img = img_arr
@@ -63,7 +57,9 @@ def conv(
             (
                 img_arr.shape[0] - (kernel.shape[0] - 1),
                 img_arr.shape[1] - (kernel.shape[1] - 1),
-            )
+                3
+            ),
+            dtype=np.float32
         )
 
     if optimize:
@@ -76,12 +72,13 @@ def conv(
         for i in range(result.shape[0]):
             for j in range(result.shape[1]):
                 window = padded_img[i: i + kernel.shape[0], j : j + kernel.shape[0]]
-                result[i][j] = np.sum(window*kernel)
+                result[i][j] = np.sum(window*kernel,axis=(0,1))
 
     result = np.clip(result, 0, 255).astype(np.uint8)
     result = Image.fromarray(result)
     return result
 
 if __name__ == "__main__":
-    result = conv(img, padding=False)
+    kernel = np.array([[-1,-1,-1], [-1,9,-1],[-1,-1,-1]])
+    result = conv(img, padding=False,kernel=kernel)
     result.save("output.jpg")
