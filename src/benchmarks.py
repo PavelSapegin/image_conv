@@ -39,20 +39,29 @@ if __name__ == "__main__":
 
     print("\nconv (padding=True, optimize=True):")
     for name, kernel in kernels.items():
-        t = benchmark(lambda k=kernel: conv(img, kernel=k, padding=True, optimize=True), NUM_RUNS)
+        t = benchmark(
+            lambda k=kernel: conv(img, kernel=k, padding=True, optimize=True), NUM_RUNS
+        )
         print(f"  {name:15s}: {t:.3f} ms")
 
     print("\nconv (padding=True, optimize=False):")
     for name, kernel in kernels.items():
-        t = benchmark(lambda k=kernel: conv(img, kernel=k, padding=True, optimize=False), NUM_RUNS)
+        t = benchmark(
+            lambda k=kernel: conv(img, kernel=k, padding=True, optimize=False), NUM_RUNS
+        )
         print(f"  {name:15s}: {t:.3f} ms")
 
     print("\nconv (padding=False, optimize=True):")
     for name, kernel in kernels.items():
-        t = benchmark(lambda k=kernel: conv(img, kernel=k, padding=False, optimize=True), NUM_RUNS)
+        t = benchmark(
+            lambda k=kernel: conv(img, kernel=k, padding=False, optimize=True), NUM_RUNS
+        )
         print(f"  {name:15s}: {t:.3f} ms")
 
     print("\nconv (padding=False, optimize=False):")
     for name, kernel in kernels.items():
-        t = benchmark(lambda k=kernel: conv(img, kernel=k, padding=False, optimize=False), NUM_RUNS)
+        t = benchmark(
+            lambda k=kernel: conv(img, kernel=k, padding=False, optimize=False),
+            NUM_RUNS,
+        )
         print(f"  {name:15s}: {t:.3f} ms")
