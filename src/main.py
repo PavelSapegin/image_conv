@@ -1,33 +1,17 @@
 from PIL import Image
 import numpy as np
 
-"""
-TASKS:
-1. to_grayscale объединить в одну функцию, 
-    сделать вычисления методов по флагу  DONE
-2. Сделать докстринги для функций
-3. Может быть сделать обёртку-класс для работы (мб наследовать от Image, но не точно,
-    мб только какие-то методы, не знаю)
-4. Подумать про ещё оптимизации (это тоже ещё посмотрим какой будет прирост от них,
-если маленький, то ещё подумаю - Im2Col) - под огромнейшим сомнением, нецелесообразно
-5. Можно заменить padding на numpy, np.pad. Всё реализовано, скучно.
-"""
-
-
 img = Image.open("./images/image.jpg").convert("RGB")
 
 
-def to_grayscale(img: Image, type: str = "lum") -> Image:
+def to_grayscale(img: Image) -> Image:
     img_arr = np.array(img)
 
-    if type == "lum": # Lum method
-        result = (
-            0.299 * img_arr[::, ::, 0]
-            + 0.587 * img_arr[::, ::, 1]
-            + 0.114 * img_arr[::, ::, 2]
-        )
-    else: # Average method
-        result = np.mean(img_arr, axis=2)
+    result = (
+        0.299 * img_arr[::, ::, 0]
+        + 0.587 * img_arr[::, ::, 1]
+        + 0.114 * img_arr[::, ::, 2]
+    )
         
     result = result.astype(np.uint8)
     result = Image.fromarray(result)
