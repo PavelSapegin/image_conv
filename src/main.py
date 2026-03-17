@@ -12,7 +12,7 @@ def to_grayscale(img: Image) -> Image:
         + 0.587 * img_arr[::, ::, 1]
         + 0.114 * img_arr[::, ::, 2]
     )
-        
+
     result = result.astype(np.uint8)
     result = Image.fromarray(result)
     return result
@@ -58,6 +58,7 @@ def conv(
     result = np.clip(result, 0, 255).astype(np.uint8)
     result = Image.fromarray(result)
     return result
+
 
 if __name__ == "__main__":
     result = conv(img, padding=False)
