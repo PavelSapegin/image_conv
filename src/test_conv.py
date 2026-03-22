@@ -21,7 +21,7 @@ GOLDEN_DIR = os.path.join(TEST_DIR, "images", "golden_images")
 def input_image() -> Image.Image:
     """Fixture for loading test image"""
     if not os.path.exists(INPUT_IMAGE_PATH):
-        pytest.fail(f"Файл не найден: {INPUT_IMAGE_PATH}")
+        pytest.fail(f"The file does't exist: {INPUT_IMAGE_PATH}")
 
     return Image.open(INPUT_IMAGE_PATH).convert("RGB")
 
@@ -41,7 +41,7 @@ def check_against_golden(result_img: Image.Image, golden_filename: str) -> None:
     np.testing.assert_array_equal(
         result_arr,
         golden_arr,
-        err_msg=f"Результат не совпадает с эталонным файлом {golden_filename}!",
+        err_msg=f"The result does not match the reference file {golden_filename}!",
     )
 
 
