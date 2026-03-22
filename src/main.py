@@ -1,10 +1,10 @@
-from PIL import Image
 import numpy as np
+from PIL import Image
 
 img = Image.open("./images/image.jpg").convert("RGB")
 
 
-def to_grayscale(img: Image) -> Image:
+def to_grayscale(img: Image.Image) -> Image.Image:
     img_arr = np.array(img)
 
     result = (
@@ -14,15 +14,15 @@ def to_grayscale(img: Image) -> Image:
     )
 
     result = result.astype(np.uint8)
-    result = Image.fromarray(result)
-    return result
+    result_img = Image.fromarray(result)
+    return result_img
 
 
 def conv(
-    img: Image,
+    img: Image.Image,
     kernel: np.ndarray = np.array([[0, 0, 0], [0, 1, 0], [0, 0, 0]]),
     padding: bool = True,
-) -> Image:
+) -> Image.Image:
     if kernel.shape[0] != kernel.shape[1]:
         raise ValueError("Kernel shape must be a square.")
     if kernel.shape[0] % 2 == 0:
@@ -56,8 +56,8 @@ def conv(
                 result += slice * kernel[i, j]
 
     result = np.clip(result, 0, 255).astype(np.uint8)
-    result = Image.fromarray(result)
-    return result
+    result_img = Image.fromarray(result)
+    return result_img
 
 
 if __name__ == "__main__":
