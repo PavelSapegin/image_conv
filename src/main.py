@@ -1,8 +1,6 @@
 import numpy as np
 from PIL import Image
 
-img = Image.open("./images/image.jpg").convert("RGB")
-
 
 def to_grayscale(img: Image.Image) -> Image.Image:
     img_arr = np.array(img)
@@ -49,11 +47,11 @@ def conv(
             )
         )
 
-        for i in range(kernel.shape[0]):
-            for j in range(kernel.shape[1]):
-                slice = padded_img[i : i + result.shape[0], j : j + result.shape[1]]
+    for i in range(kernel.shape[0]):
+        for j in range(kernel.shape[1]):
+            slice = padded_img[i : i + result.shape[0], j : j + result.shape[1]]
 
-                result += slice * kernel[i, j]
+            result += slice * kernel[i, j]
 
     result = np.clip(result, 0, 255).astype(np.uint8)
     result_img = Image.fromarray(result)
@@ -61,5 +59,6 @@ def conv(
 
 
 if __name__ == "__main__":
+    img = Image.open("./images/corgy0.jpg").convert("RGB")
     result = conv(img, padding=False)
     result.save("output.jpg")
