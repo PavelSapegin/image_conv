@@ -79,6 +79,5 @@ def test_to_grayscale(input_image: Image.Image) -> None:
     """
     Test grayscale function
     """
-
     result = to_grayscale(input_image)
     check_against_golden(result, "grayscale_expected.png")
