@@ -1,3 +1,5 @@
+import argparse
+
 import numpy as np
 from PIL import Image
 
@@ -30,10 +32,10 @@ def conv(
     img_arr = np.array(img)
 
     if padding:
-        padding = (kernel.shape[0] - 1) // 2
+        padding_size = (kernel.shape[0] - 1) // 2
 
-        zero_h = np.zeros((img_arr.shape[0], padding))
-        zero_w = np.zeros((padding, img_arr.shape[1] + 2 * padding))
+        zero_h = np.zeros((img_arr.shape[0], padding_size))
+        zero_w = np.zeros((padding_size, img_arr.shape[1] + 2 * padding_size))
         padded_img = np.hstack((zero_h, img_arr, zero_h))
         padded_img = np.vstack((zero_w, padded_img, zero_w))
         result = np.zeros((img_arr.shape[0], img_arr.shape[1]))
@@ -49,16 +51,51 @@ def conv(
 
     for i in range(kernel.shape[0]):
         for j in range(kernel.shape[1]):
-            slice = padded_img[i : i + result.shape[0], j : j + result.shape[1]]
+            img_slice = padded_img[i : i + result.shape[0], j : j + result.shape[1]]
 
-            result += slice * kernel[i, j]
+            result += img_slice * kernel[i, j]
 
     result = np.clip(result, 0, 255).astype(np.uint8)
     result_img = Image.fromarray(result)
     return result_img
 
 
+FILTERS = {
+    "identity": np.array([[0, 0, 0], [0, 1, 0], [0, 0, 0]]),
+    "blur": np.array(
+        [[1 / 9, 1 / 9, 1 / 9], [1 / 9, 1 / 9, 1 / 9], [1 / 9, 1 / 9, 1 / 9]]
+    ),
+    "gaussian_blur": np.array(
+        [[1 / 16, 2 / 16, 1 / 16], [2 / 16, 4 / 16, 2 / 16], [1 / 16, 2 / 16, 1 / 16]]
+    ),
+    "sharpen": np.array([[0, -1, 0], [-1, 5, -1], [0, -1, 0]]),
+    "edge": np.array([[-1, -1, -1], [-1, 8, -1], [-1, -1, -1]]),
+}
+
+
 if __name__ == "__main__":
-    img = Image.open("./images/corgy0.jpg").convert("RGB")
-    result = conv(img, padding=False)
-    result.save("output.jpg")
+    parser = argparse.ArgumentParser("Applying filters to an image using convolution.")
+
+    parser.add_argument("input", help="Path to input file")
+    parser.add_argument("output", help="Path to output file")
+
+    parser.add_argument(
+        "--filter",
+        choices=FILTERS.keys(),
+        default="identity",
+        help="Name of using filter",
+    )
+
+    parser.add_argument("--padding", action="store_true", help="Use padding")
+
+    args = parser.parse_args()
+
+    try:
+        img = Image.open(args.input).convert("RGB")
+    except FileNotFoundError:
+        print(f"Error: file {args.input} wasn't found.")
+
+    selected_kernel = FILTERS[args.filter]
+
+    result = conv(img, kernel=selected_kernel, padding=args.padding)
+    result.save(args.output)
