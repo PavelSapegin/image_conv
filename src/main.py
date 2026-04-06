@@ -1,4 +1,5 @@
 import argparse
+import sys
 
 import numpy as np
 from PIL import Image
@@ -18,10 +19,74 @@ def to_grayscale(img: Image.Image) -> Image.Image:
     return result_img
 
 
+def padding_convert(
+    img_arr: np.ndarray, kernel: np.ndarray, padding_mode: str
+) -> tuple[np.ndarray, np.ndarray]:
+
+    padding_size = (kernel.shape[0] - 1) // 2
+    h, w = img_arr.shape
+    if padding_mode == "valid":
+        padded_img = img_arr
+        result = np.zeros(
+            (
+                h - (kernel.shape[0] - 1),
+                w - (kernel.shape[1] - 1),
+            )
+        )
+    else:
+        padded_img = np.zeros((h + 2 * padding_size, w + 2 * padding_size))
+        padded_img[padding_size : padding_size + h, padding_size : padding_size + w] = (
+            img_arr
+        )
+
+        if padding_mode == "zero":
+            pass
+
+        elif padding_mode == "edge":
+            # Fill up and down edges
+            for i in range(padding_size):
+                # Верхняя рамка
+                padded_img[i, padding_size : padding_size + w] = img_arr[0, :]
+                # Нижняя рамка
+                padded_img[padding_size + h + i, padding_size : padding_size + w] = (
+                    img_arr[-1, :]
+                )
+
+            # Fill left and right edges
+            for j in range(padding_size):
+                padded_img[:, j] = padded_img[:, padding_size]
+                padded_img[:, padding_size + w + j] = padded_img[
+                    :, padding_size + w - 1
+                ]
+
+        elif padding_mode == "reflect":
+            # Mirror reflection up and down
+            for i in range(padding_size):
+                padded_img[padding_size - 1 - i, padding_size : padding_size + w] = (
+                    img_arr[i + 1, :]
+                )
+                padded_img[padding_size + h + i, padding_size : padding_size + w] = (
+                    img_arr[-2 - i, :]
+                )
+
+            # Mirror reflection left and right
+            for j in range(padding_size):
+                padded_img[:, padding_size - 1 - j] = padded_img[
+                    :, padding_size + 1 + j
+                ]
+                padded_img[:, padding_size + w + j] = padded_img[
+                    :, padding_size + w - 2 - j
+                ]
+
+        result = np.zeros((h, w))
+
+    return (result, padded_img)
+
+
 def conv(
     img: Image.Image,
     kernel: np.ndarray = np.array([[0, 0, 0], [0, 1, 0], [0, 0, 0]]),
-    padding: bool = True,
+    padding_mode: str = "valid",
 ) -> Image.Image:
     if kernel.shape[0] != kernel.shape[1]:
         raise ValueError("Kernel shape must be a square.")
@@ -31,23 +96,7 @@ def conv(
     img = to_grayscale(img)
     img_arr = np.array(img)
 
-    if padding:
-        padding_size = (kernel.shape[0] - 1) // 2
-
-        zero_h = np.zeros((img_arr.shape[0], padding_size))
-        zero_w = np.zeros((padding_size, img_arr.shape[1] + 2 * padding_size))
-        padded_img = np.hstack((zero_h, img_arr, zero_h))
-        padded_img = np.vstack((zero_w, padded_img, zero_w))
-        result = np.zeros((img_arr.shape[0], img_arr.shape[1]))
-
-    else:
-        padded_img = img_arr
-        result = np.zeros(
-            (
-                img_arr.shape[0] - (kernel.shape[0] - 1),
-                img_arr.shape[1] - (kernel.shape[1] - 1),
-            )
-        )
+    result, padded_img = padding_convert(img_arr, kernel, padding_mode)
 
     for i in range(kernel.shape[0]):
         for j in range(kernel.shape[1]):
@@ -86,7 +135,12 @@ if __name__ == "__main__":
         help="Name of using filter",
     )
 
-    parser.add_argument("--padding", action="store_true", help="Use padding")
+    parser.add_argument(
+        "--padding",
+        choices=["valid", "zero", "edge", "reflect"],
+        default="zero",
+        help="Manual edge handling mode: 'valid', 'zero', 'edge', 'reflect'",
+    )
 
     args = parser.parse_args()
 
@@ -94,8 +148,9 @@ if __name__ == "__main__":
         img = Image.open(args.input).convert("RGB")
     except FileNotFoundError:
         print(f"Error: file {args.input} wasn't found.")
+        sys.exit(1)
 
     selected_kernel = FILTERS[args.filter]
 
-    result = conv(img, kernel=selected_kernel, padding=args.padding)
+    result = conv(img, kernel=selected_kernel, padding_mode=args.padding)
     result.save(args.output)
