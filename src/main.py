@@ -24,17 +24,29 @@ def padding_convert(
 ) -> tuple[np.ndarray, np.ndarray]:
 
     padding_size = (kernel.shape[0] - 1) // 2
-    h, w = img_arr.shape
+    h, w = img_arr.shape[:2]
+    is_rgb = img_arr.ndim == 3
+
+    # Special for mypy
+    padded_shape: tuple[int, ...]
+    result_valid_shape: tuple[int, ...]
+    result_same_shape: tuple[int, ...]
+    
+    
+    if is_rgb:
+        padded_shape = (h + 2 * padding_size, w + 2 * padding_size, 3)
+        result_valid_shape = (h - 2 * padding_size, w - 2 * padding_size, 3)
+        result_same_shape = (h, w, 3)
+    else:
+        padded_shape = (h + 2 * padding_size, w + 2 * padding_size)
+        result_valid_shape = (h - 2 * padding_size, w - 2 * padding_size)
+        result_same_shape = (h, w)
+
     if padding_mode == "valid":
         padded_img = img_arr
-        result = np.zeros(
-            (
-                h - (kernel.shape[0] - 1),
-                w - (kernel.shape[1] - 1),
-            )
-        )
+        result = np.zeros(result_valid_shape)
     else:
-        padded_img = np.zeros((h + 2 * padding_size, w + 2 * padding_size))
+        padded_img = np.zeros(padded_shape)
         padded_img[padding_size : padding_size + h, padding_size : padding_size + w] = (
             img_arr
         )
@@ -76,7 +88,7 @@ def padding_convert(
                     :, padding_size + w - 2 - j
                 ]
 
-        result = np.zeros((h, w))
+        result = np.zeros(result_same_shape)
 
     return (result, padded_img)
 
@@ -85,13 +97,15 @@ def conv(
     img: Image.Image,
     kernel: np.ndarray = np.array([[0, 0, 0], [0, 1, 0], [0, 0, 0]]),
     padding_mode: str = "valid",
+    gray: bool = False,
 ) -> Image.Image:
     if kernel.shape[0] != kernel.shape[1]:
         raise ValueError("Kernel shape must be a square.")
     if kernel.shape[0] % 2 == 0:
         raise ValueError("Kernel shape must be odd.")
 
-    img = to_grayscale(img)
+    if gray:
+        img = to_grayscale(img)
     img_arr = np.array(img)
 
     result, padded_img = padding_convert(img_arr, kernel, padding_mode)
@@ -140,6 +154,11 @@ if __name__ == "__main__":
         help="Manual edge handling mode: 'valid', 'zero', 'edge', 'reflect'",
     )
 
+    parser.add_argument(
+        "--gray",
+        action="store_true",
+        help="Process image in grayscale mode (instead of RGB)"
+    )
     args = parser.parse_args()
 
     try:
@@ -150,5 +169,7 @@ if __name__ == "__main__":
 
     selected_kernel = FILTERS[args.filter]
 
-    result = conv(img, kernel=selected_kernel, padding_mode=args.padding)
+    result = conv(
+        img, kernel=selected_kernel, padding_mode=args.padding, gray=args.gray
+    )
     result.save(args.output)
