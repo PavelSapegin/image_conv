@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 from PIL import Image
 
-from main import conv, to_grayscale
+from main import FILTERS, conv, to_grayscale
 
 # PATHS
 # Dir with test_conv.py
@@ -47,18 +47,28 @@ def check_against_golden(result_img: Image.Image, golden_filename: str) -> None:
 
 # Parameters (Golden file, kernel, padding)
 KERNELS_TO_TEST = [
-    ("identity_no_padding.png", np.array([[0, 0, 0], [0, 1, 0], [0, 0, 0]]), "valid"),
+    ("identity_no_padding.png", FILTERS["identity"], "valid"),
     (
         "edge_detect_padding.png",
-        np.array([[-1, -1, -1], [-1, 8, -1], [-1, -1, -1]]),
+        FILTERS["edge"],
         "zero",
     ),
     (
         "blur_no_padding.png",
-        np.array([[1 / 9, 1 / 9, 1 / 9], [1 / 9, 1 / 9, 1 / 9], [1 / 9, 1 / 9, 1 / 9]]),
+        FILTERS["blur"],
         "valid",
     ),
-    ("sharpen_padding.png", np.array([[0, -1, 0], [-1, 5, -1], [0, -1, 0]]), "zero"),
+    ("sharpen_padding.png", FILTERS["sharpen"], "zero"),
+    (
+        "blur_edge_padding.png",
+        FILTERS["blur"],
+        "edge",
+    ),
+    (
+        "sharpen_reflect_padding.png",
+        FILTERS["sharpen"],
+        "reflect",
+    ),
 ]
 
 
