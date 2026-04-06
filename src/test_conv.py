@@ -33,7 +33,8 @@ def check_against_golden(result_img: Image.Image, golden_filename: str) -> None:
     if not os.path.exists(golden_path):
         pytest.fail(f"Golden file didn't found: {golden_path}")
 
-    golden_img = Image.open(golden_path).convert("L")
+    mode = "RGB" if result_img.mode == "RGB" else "L"
+    golden_img = Image.open(golden_path).convert(mode)
 
     result_arr = np.array(result_img)
     golden_arr = np.array(golden_img)
@@ -47,40 +48,30 @@ def check_against_golden(result_img: Image.Image, golden_filename: str) -> None:
 
 # Parameters (Golden file, kernel, padding)
 KERNELS_TO_TEST = [
-    ("identity_no_padding.png", FILTERS["identity"], "valid"),
-    (
-        "edge_detect_padding.png",
-        FILTERS["edge"],
-        "zero",
-    ),
-    (
-        "blur_no_padding.png",
-        FILTERS["blur"],
-        "valid",
-    ),
-    ("sharpen_padding.png", FILTERS["sharpen"], "zero"),
-    (
-        "blur_edge_padding.png",
-        FILTERS["blur"],
-        "edge",
-    ),
-    (
-        "sharpen_reflect_padding.png",
-        FILTERS["sharpen"],
-        "reflect",
-    ),
+    ("identity_no_padding_gray.png", FILTERS["identity"], "valid", True),
+    ("edge_detect_padding_gray.png", FILTERS["edge"], "zero", True),
+    ("blur_edge_padding_gray.png", FILTERS["blur"], "edge", True),
+    ("sharpen_reflect_padding_gray.png", FILTERS["sharpen"], "reflect", True),
+    ("identity_no_padding_color.png", FILTERS["identity"], "valid", False),
+    ("edge_detect_padding_color.png", FILTERS["edge"], "zero", False),
+    ("blur_edge_padding_color.png", FILTERS["blur"], "edge", False),
+    ("sharpen_reflect_padding_color.png", FILTERS["sharpen"], "reflect", False),
 ]
 
 
-@pytest.mark.parametrize("golden_file, kernel, padding_mode", KERNELS_TO_TEST)
+@pytest.mark.parametrize("golden_file, kernel, padding_mode, gray", KERNELS_TO_TEST)
 def test_conv_with_various_kernels(
-    input_image: Image.Image, golden_file: str, kernel: np.ndarray, padding_mode: str
+    input_image: Image.Image,
+    golden_file: str,
+    kernel: np.ndarray,
+    padding_mode: str,
+    gray: bool,
 ) -> None:
     """
     Test function conv on some kernels (blur, sharpen, edge detection)
     comparing result with golden .png files.
     """
-    result = conv(input_image, kernel=kernel, padding_mode=padding_mode)
+    result = conv(input_image, kernel=kernel, padding_mode=padding_mode, gray=gray)
 
     check_against_golden(result, golden_file)
 

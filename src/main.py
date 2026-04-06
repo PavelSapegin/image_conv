@@ -31,8 +31,7 @@ def padding_convert(
     padded_shape: tuple[int, ...]
     result_valid_shape: tuple[int, ...]
     result_same_shape: tuple[int, ...]
-    
-    
+
     if is_rgb:
         padded_shape = (h + 2 * padding_size, w + 2 * padding_size, 3)
         result_valid_shape = (h - 2 * padding_size, w - 2 * padding_size, 3)
@@ -157,7 +156,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--gray",
         action="store_true",
-        help="Process image in grayscale mode (instead of RGB)"
+        help="Process image in grayscale mode (instead of RGB)",
     )
     args = parser.parse_args()
 
