@@ -45,9 +45,7 @@ def padding_convert(
         elif padding_mode == "edge":
             # Fill up and down edges
             for i in range(padding_size):
-                # Верхняя рамка
                 padded_img[i, padding_size : padding_size + w] = img_arr[0, :]
-                # Нижняя рамка
                 padded_img[padding_size + h + i, padding_size : padding_size + w] = (
                     img_arr[-1, :]
                 )
