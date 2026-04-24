@@ -59,11 +59,6 @@ def get_shapes(
     h, w = img_shape[:2]
     is_rgb = len(img_shape) == 3
 
-    # # Special for mypy
-    # padded_shape: tuple[int, ...]
-    # result_valid_shape: tuple[int, ...]
-    # result_same_shape: tuple[int, ...]
-
     if padding_mode == "valid":
         res_h, res_w = h - 2 * padding_size, w - 2 * padding_size
         pad_h, pad_w = h, w
