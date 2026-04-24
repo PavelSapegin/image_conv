@@ -19,75 +19,89 @@ def to_grayscale(img: Image.Image) -> Image.Image:
     return result_img
 
 
+def apply_edge_padding(
+    img_arr: np.ndarray, padded_img: np.ndarray, padding_size: int, w: int, h: int
+) -> None:
+    # Fill up and down edges
+    for i in range(padding_size):
+        padded_img[i, padding_size : padding_size + w] = img_arr[0, :]
+        padded_img[padding_size + h + i, padding_size : padding_size + w] = img_arr[
+            -1, :
+        ]
+
+    # Fill left and right edges
+    for j in range(padding_size):
+        padded_img[:, j] = padded_img[:, padding_size]
+        padded_img[:, padding_size + w + j] = padded_img[:, padding_size + w - 1]
+
+
+def apply_reflect_padding(
+    img_arr: np.ndarray, padded_img: np.ndarray, padding_size: int, w: int, h: int
+) -> None:
+    # Mirror reflection up and down
+    for i in range(padding_size):
+        padded_img[padding_size - 1 - i, padding_size : padding_size + w] = img_arr[
+            i + 1, :
+        ]
+        padded_img[padding_size + h + i, padding_size : padding_size + w] = img_arr[
+            -2 - i, :
+        ]
+
+    # Mirror reflection left and right
+    for j in range(padding_size):
+        padded_img[:, padding_size - 1 - j] = padded_img[:, padding_size + 1 + j]
+        padded_img[:, padding_size + w + j] = padded_img[:, padding_size + w - 2 - j]
+
+
+def get_shapes(
+    img_shape: tuple[int, ...], padding_size: int, padding_mode: str
+) -> tuple[tuple[int, ...], tuple[int, ...]]:
+    h, w = img_shape[:2]
+    is_rgb = len(img_shape) == 3
+
+    # # Special for mypy
+    # padded_shape: tuple[int, ...]
+    # result_valid_shape: tuple[int, ...]
+    # result_same_shape: tuple[int, ...]
+
+    if padding_mode == "valid":
+        res_h, res_w = h - 2 * padding_size, w - 2 * padding_size
+        pad_h, pad_w = h, w
+    else:
+        res_h, res_w = h, w
+        pad_h, pad_w = h + 2 * padding_size, w + 2 * padding_size
+
+    return (
+        ((res_h, res_w, 3), (pad_h, pad_w, 3))
+        if (is_rgb)
+        else ((res_h, res_w), (pad_h, pad_w))
+    )
+
+
 def padding_convert(
     img_arr: np.ndarray, kernel: np.ndarray, padding_mode: str
 ) -> tuple[np.ndarray, np.ndarray]:
 
     padding_size = (kernel.shape[0] - 1) // 2
     h, w = img_arr.shape[:2]
-    is_rgb = img_arr.ndim == 3
 
-    # Special for mypy
-    padded_shape: tuple[int, ...]
-    result_valid_shape: tuple[int, ...]
-    result_same_shape: tuple[int, ...]
+    result_shape, padded_shape = get_shapes(img_arr.shape, padding_size, padding_mode)
 
-    if is_rgb:
-        padded_shape = (h + 2 * padding_size, w + 2 * padding_size, 3)
-        result_valid_shape = (h - 2 * padding_size, w - 2 * padding_size, 3)
-        result_same_shape = (h, w, 3)
-    else:
-        padded_shape = (h + 2 * padding_size, w + 2 * padding_size)
-        result_valid_shape = (h - 2 * padding_size, w - 2 * padding_size)
-        result_same_shape = (h, w)
+    result = np.zeros(result_shape)
 
     if padding_mode == "valid":
-        padded_img = img_arr
-        result = np.zeros(result_valid_shape)
-    else:
-        padded_img = np.zeros(padded_shape)
-        padded_img[padding_size : padding_size + h, padding_size : padding_size + w] = (
-            img_arr
-        )
+        return (result, img_arr)
 
-        if padding_mode == "zero":
-            pass
+    padded_img = np.zeros(padded_shape)
+    padded_img[padding_size : padding_size + h, padding_size : padding_size + w] = (
+        img_arr
+    )
 
-        elif padding_mode == "edge":
-            # Fill up and down edges
-            for i in range(padding_size):
-                padded_img[i, padding_size : padding_size + w] = img_arr[0, :]
-                padded_img[padding_size + h + i, padding_size : padding_size + w] = (
-                    img_arr[-1, :]
-                )
+    if padding_mode == "edge":
+        apply_edge_padding(img_arr, padded_img, padding_size, w, h)
 
-            # Fill left and right edges
-            for j in range(padding_size):
-                padded_img[:, j] = padded_img[:, padding_size]
-                padded_img[:, padding_size + w + j] = padded_img[
-                    :, padding_size + w - 1
-                ]
-
-        elif padding_mode == "reflect":
-            # Mirror reflection up and down
-            for i in range(padding_size):
-                padded_img[padding_size - 1 - i, padding_size : padding_size + w] = (
-                    img_arr[i + 1, :]
-                )
-                padded_img[padding_size + h + i, padding_size : padding_size + w] = (
-                    img_arr[-2 - i, :]
-                )
-
-            # Mirror reflection left and right
-            for j in range(padding_size):
-                padded_img[:, padding_size - 1 - j] = padded_img[
-                    :, padding_size + 1 + j
-                ]
-                padded_img[:, padding_size + w + j] = padded_img[
-                    :, padding_size + w - 2 - j
-                ]
-
-        result = np.zeros(result_same_shape)
+    elif padding_mode == "reflect":
+        apply_reflect_padding(img_arr, padded_img, padding_size, w, h)
 
     return (result, padded_img)
 
