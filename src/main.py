@@ -1,4 +1,5 @@
 import argparse
+import sys
 
 import numpy as np
 from PIL import Image
@@ -18,36 +19,104 @@ def to_grayscale(img: Image.Image) -> Image.Image:
     return result_img
 
 
+def apply_edge_padding(
+    img_arr: np.ndarray, padded_img: np.ndarray, padding_size: int, w: int, h: int
+) -> None:
+    # Fill up and down edges
+    for i in range(padding_size):
+        padded_img[i, padding_size : padding_size + w] = img_arr[0, :]
+        padded_img[padding_size + h + i, padding_size : padding_size + w] = img_arr[
+            -1, :
+        ]
+
+    # Fill left and right edges
+    for j in range(padding_size):
+        padded_img[:, j] = padded_img[:, padding_size]
+        padded_img[:, padding_size + w + j] = padded_img[:, padding_size + w - 1]
+
+
+def apply_reflect_padding(
+    img_arr: np.ndarray, padded_img: np.ndarray, padding_size: int, w: int, h: int
+) -> None:
+    # Mirror reflection up and down
+    for i in range(padding_size):
+        padded_img[padding_size - 1 - i, padding_size : padding_size + w] = img_arr[
+            i + 1, :
+        ]
+        padded_img[padding_size + h + i, padding_size : padding_size + w] = img_arr[
+            -2 - i, :
+        ]
+
+    # Mirror reflection left and right
+    for j in range(padding_size):
+        padded_img[:, padding_size - 1 - j] = padded_img[:, padding_size + 1 + j]
+        padded_img[:, padding_size + w + j] = padded_img[:, padding_size + w - 2 - j]
+
+
+def get_shapes(
+    img_shape: tuple[int, ...], padding_size: int, padding_mode: str
+) -> tuple[tuple[int, ...], tuple[int, ...]]:
+    h, w = img_shape[:2]
+    is_rgb = len(img_shape) == 3
+
+    if padding_mode == "valid":
+        res_h, res_w = h - 2 * padding_size, w - 2 * padding_size
+        pad_h, pad_w = h, w
+    else:
+        res_h, res_w = h, w
+        pad_h, pad_w = h + 2 * padding_size, w + 2 * padding_size
+
+    return (
+        ((res_h, res_w, 3), (pad_h, pad_w, 3))
+        if (is_rgb)
+        else ((res_h, res_w), (pad_h, pad_w))
+    )
+
+
+def padding_convert(
+    img_arr: np.ndarray, kernel: np.ndarray, padding_mode: str
+) -> tuple[np.ndarray, np.ndarray]:
+
+    padding_size = (kernel.shape[0] - 1) // 2
+    h, w = img_arr.shape[:2]
+
+    result_shape, padded_shape = get_shapes(img_arr.shape, padding_size, padding_mode)
+
+    result = np.zeros(result_shape)
+
+    if padding_mode == "valid":
+        return (result, img_arr)
+
+    padded_img = np.zeros(padded_shape)
+    padded_img[padding_size : padding_size + h, padding_size : padding_size + w] = (
+        img_arr
+    )
+
+    if padding_mode == "edge":
+        apply_edge_padding(img_arr, padded_img, padding_size, w, h)
+
+    elif padding_mode == "reflect":
+        apply_reflect_padding(img_arr, padded_img, padding_size, w, h)
+
+    return (result, padded_img)
+
+
 def conv(
     img: Image.Image,
     kernel: np.ndarray = np.array([[0, 0, 0], [0, 1, 0], [0, 0, 0]]),
-    padding: bool = True,
+    padding_mode: str = "valid",
+    gray: bool = False,
 ) -> Image.Image:
     if kernel.shape[0] != kernel.shape[1]:
         raise ValueError("Kernel shape must be a square.")
     if kernel.shape[0] % 2 == 0:
         raise ValueError("Kernel shape must be odd.")
 
-    img = to_grayscale(img)
+    if gray:
+        img = to_grayscale(img)
     img_arr = np.array(img)
 
-    if padding:
-        padding_size = (kernel.shape[0] - 1) // 2
-
-        zero_h = np.zeros((img_arr.shape[0], padding_size))
-        zero_w = np.zeros((padding_size, img_arr.shape[1] + 2 * padding_size))
-        padded_img = np.hstack((zero_h, img_arr, zero_h))
-        padded_img = np.vstack((zero_w, padded_img, zero_w))
-        result = np.zeros((img_arr.shape[0], img_arr.shape[1]))
-
-    else:
-        padded_img = img_arr
-        result = np.zeros(
-            (
-                img_arr.shape[0] - (kernel.shape[0] - 1),
-                img_arr.shape[1] - (kernel.shape[1] - 1),
-            )
-        )
+    result, padded_img = padding_convert(img_arr, kernel, padding_mode)
 
     for i in range(kernel.shape[0]):
         for j in range(kernel.shape[1]):
@@ -86,16 +155,29 @@ if __name__ == "__main__":
         help="Name of using filter",
     )
 
-    parser.add_argument("--padding", action="store_true", help="Use padding")
+    parser.add_argument(
+        "--padding",
+        choices=["valid", "zero", "edge", "reflect"],
+        default="zero",
+        help="Manual edge handling mode: 'valid', 'zero', 'edge', 'reflect'",
+    )
 
+    parser.add_argument(
+        "--gray",
+        action="store_true",
+        help="Process image in grayscale mode (instead of RGB)",
+    )
     args = parser.parse_args()
 
     try:
         img = Image.open(args.input).convert("RGB")
     except FileNotFoundError:
         print(f"Error: file {args.input} wasn't found.")
+        sys.exit(1)
 
     selected_kernel = FILTERS[args.filter]
 
-    result = conv(img, kernel=selected_kernel, padding=args.padding)
+    result = conv(
+        img, kernel=selected_kernel, padding_mode=args.padding, gray=args.gray
+    )
     result.save(args.output)
