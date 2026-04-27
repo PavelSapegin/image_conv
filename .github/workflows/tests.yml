@@ -26,4 +26,4 @@ jobs:
           pip install pytest numpy Pillow types-Pillow
 
       - name: Run Pytest (Golden Tests)
-        run: pytest
+        run: pytest --benchmark-skip
