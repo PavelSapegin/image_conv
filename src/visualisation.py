@@ -44,22 +44,18 @@ def parse_benchmarks(filepath: str) -> pd.DataFrame:
         kernel = p.get("kernel_name", "unknown")
         padding = p.get("padding_mode", "unknown")
 
-
         is_gray = str(p.get("gray", "")).lower() == "true"
         color_mode = "gray" if is_gray else "color"
-
 
         stats = bench.get("stats", {})
         all_runs = stats.get("data", [])
 
         if not all_runs:
-
             mean_time = stats.get("mean")
             if mean_time is not None:
                 all_runs = [mean_time]
             else:
-                continue  
-
+                continue
 
         for run_time in all_runs:
             records.append(
@@ -115,9 +111,7 @@ def plot_results(df: pd.DataFrame, output_filename: str = "bench_results.png") -
         ax.yaxis.grid(True, which="both", linestyle="--", alpha=0.5)
 
     g.set_axis_labels("Image Size", "Execution Time (ms)")
-    g.figure.suptitle(
-        "Comparison of Implementation Performance", y=1.02, fontsize=16
-    )
+    g.figure.suptitle("Comparison of Implementation Performance", y=1.02, fontsize=16)
 
     plt.savefig(output_filename, bbox_inches="tight", dpi=300)
     print(f"Graph successfully saved to {output_filename}")
