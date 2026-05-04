@@ -8,11 +8,11 @@
 ![Original](src/images/bench_results.png)
 #### Запуск
 ```python
-pytest test_benchmark.py --benchmark-columns=min,max,mean,stddev --benchmark-sort=mean --benchmark-json=result.json 
+uv run pytest test_benchmark.py --benchmark-columns=min,max,mean,stddev --benchmark-sort=mean --benchmark-json=result.json 
 ```
 Для отрисовки
 ```
-python3 visualisation.py
+uv run visualisation.py
 ```
 
 Все изображения были взяты с `unplash.com`, распространяются под свободной лицензией.
