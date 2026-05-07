@@ -1,0 +1,9 @@
+matplotlib==3.10.9
+numba==0.65.0
+numpy==2.4.4
+opencv_python==4.13.0.92
+pandas==3.0.2
+Pillow==12.2.0
+pytest==9.0.2
+pytest_benchmark==5.2.3
+seaborn==0.13.2
